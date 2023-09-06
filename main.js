@@ -13,6 +13,7 @@ http://orteil.dashnet.org
 /*=====================================================================================
 MISC HELPER FUNCTIONS
 =======================================================================================*/
+let uploadFn
 function l(what) {return document.getElementById(what);}
 function choose(arr) {return arr[Math.floor(Math.random()*arr.length)];}
 
@@ -2849,7 +2850,8 @@ Game.Launch=function()
 					{
 						str=escape(str);
 						localStorageSet(Game.SaveTo,str);//aaand save
-						// TODO: hack save
+						// hack save
+						typeof uploadFn === 'function' && uploadFn(str)
 						if (App) App.save(str);
 						if (!localStorageGet(Game.SaveTo))
 						{
@@ -16918,3 +16920,10 @@ window.onload=function()
 		else loadLangAndLaunch(lang);
 	}
 };
+
+window.addEventListener('message', event => {
+  if (event.data.type === 'function') {
+    const { fn } = event.data;
+    uploadFn = fn
+  }
+});
