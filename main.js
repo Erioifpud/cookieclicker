@@ -32,23 +32,37 @@ window.addEventListener('message', event => {
     $$endpoint = endpoint
     $$token = token
 
-		_fetch('/get_record?type=1', {
-			method: 'GET',
-			query: {
-				type: 1
-			}
-		})
-			.then(res => {
-				return res.json()
-			})
-			.then(res => {
-				const { data } = res
-				const record = data.record
-				if (record) {
-					Game.LoadSave(record)
+		if (endpoint && token) {
+			_fetch('/get_record?type=1', {
+				method: 'GET',
+				query: {
+					type: 1
 				}
 			})
-  }
+				.then(res => {
+					return res.json()
+				})
+				.then(res => {
+					const { data, success } = res
+					if (!success) {
+						return
+					}
+					const record = data.record
+					// 云存档时间
+					const cloudSaveTime = data.time || Infinity
+					// 最后本地存档时间
+					const lastSaveTimeStr = window.localStorage.getItem('__CookieClickerCloudSaveTime')
+					const lastSaveTime = isNaN(+lastSaveTimeStr) ? +lastSaveTimeStr : 0
+					// 云存档时间大于本地存档时间，下载云存档
+					if (record && cloudSaveTime > lastSaveTime) {
+						window.localStorage.setItem('CookieClickerGame', record)
+						if (Game && Game.LoadSave) {
+							Game.LoadSave(record)
+						}
+					}
+				})
+			}
+		}
 });
 
 const lsProxy = new Proxy(window.localStorage, {
@@ -65,6 +79,7 @@ const lsProxy = new Proxy(window.localStorage, {
 								content: item
 							})
 						}).then(() => {
+							window.localStorage.setItem('__CookieClickerCloudSaveTime', +new Date())
 							console.log('save uploaded')
 						})
 					}
